@@ -25,16 +25,22 @@ jobs:
         run: |
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git config --global user.name "$GITHUB_ACTOR"
+          MAIN_SHA=$(git rev-parse --short HEAD)
           mkdir ./tmp
           mv xml ./tmp/xml
-          git fetch origin gh-pages
-          git checkout gh-pages
-          git rm -rf xml cpp_api
+          if git fetch origin gh-pages; then
+            git checkout gh-pages
+            git rm -rf xml cpp_api
+          else
+            git checkout --orphan gh-pages
+            git rm -rf .
+            git clean -fd -e /tmp
+          fi
           mv ./tmp/xml ./xml
           breathe-apidoc -o cpp_api xml
           git add xml cpp_api
           if [ -n "$(git status --porcelain)" ]
           then
-            git commit -m "Update API docs ($(git rev-parse --short main))."
+            git commit -m "Update API docs (${MAIN_SHA})."
             git push origin gh-pages
           fi
